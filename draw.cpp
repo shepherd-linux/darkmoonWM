@@ -16,30 +16,32 @@ static const unsigned char utfmask[UTF_SIZ + 1] = {0xC0, 0x80, 0xE0, 0xF0, 0xF8}
 static const long utfmin[UTF_SIZ + 1] = {0, 0, 0x80, 0x800, 0x10000};
 static const long utfmax[UTF_SIZ + 1] = {0x10FFFF, 0x7F, 0x7FF, 0xFFFF, 0x10FFFF};
 
-class dmDrawable
+dmDrawable::dmDrawable(Display *dpy, int _screen, Window _root, int w, int h)
 {
-public:
-	int width, height, screen;
-	Display *display;
-	Window root;
-	Drawable drawable;
-	GC gc;
-	Clr *scheme;
-	Fnt *fonts;
+	display = dpy;
+	screen = _screen;
+	root = _root;
+	width = w;
+	height = h;
+	drawable = XCreatePixmap(display, root, width, height, DefaultDepth(display, screen));
+	gc = XCreateGC(display, root, 0, nullptr);
+	XSetLineAttributes(display, gc, 1, LineSolid, CapButt, JoinMiter);
+}
+dmDrawable::~dmDrawable()
+{
+	XFreePixmap(display, drawable);
+	XFreeGC(display, gc);
+	drw_fontset_free(fonts);
+}
 
-	dmDrawable(Display *dpy, int _screen, Window _root, int w, int h)
-	{
-		display = dpy;
-		screen = _screen;
-		root = _root;
-		width = w;
-		height = h;
-		drawable = XCreatePixmap(display, root, width, height, DefaultDepth(display, screen));
-		gc = XCreateGC(display, root, 0, nullptr);
-		XSetLineAttributes(display, gc, 1, LineSolid, CapButt, JoinMiter);
-	}
-	
-};
+void dmDrawable::dm_resize(int w, int h)
+{
+	width = w;
+	height = h;
+	if (drawable)
+		XFreePixmap(display, drawable);
+	drawable = XCreatePixmap(display, root, width, height, DefaultDepth(display, screen));
+}
 
 static long
 utf8decodebyte(const char c, size_t *i)
@@ -95,9 +97,9 @@ dmDrawable *drw_create(Display *dpy, int screen, Window root, unsigned int w, un
 	drw->root = root;
 	drw->w = w;
 	drw->h = h;
-	drw.drawable = XCreatePixmap(dpy, root, w, h, DefaultDepth(dpy, screen));
-	drw.gc = XCreateGC(dpy, root, 0, NULL);
-	XSetLineAttributes(dpy, drw.gc, 1, LineSolid, CapButt, JoinMiter);
+	drw->drawable = XCreatePixmap(dpy, root, w, h, DefaultDepth(dpy, screen));
+	drw->gc = XCreateGC(dpy, root, 0, NULL);
+	XSetLineAttributes(dpy, drw->gc, 1, LineSolid, CapButt, JoinMiter);
 
 	return drw;
 }
@@ -108,16 +110,16 @@ void drw_resize(dmDrawable *drw, unsigned int w, unsigned int h)
 		return;
 
 	drw->width = w;
-	drw.height= h;
-	if (drw.drawable)
-		XFreePixmap(drw.display, drw.drawable);
-	drw.drawable = XCreatePixmap(drw->display, drw.root, w, h, DefaultDepth(drw.disply, drw.screen));
+	drw->height = h;
+	if (drw->drawable)
+		XFreePixmap(drw->display, drw->drawable);
+	drw->drawable = XCreatePixmap(drw->display, drw->root, w, h, DefaultDepth(drw->display, drw->screen));
 }
 
 void drw_free(dmDrawable *drw)
 {
-	XFreePixmap(drw->display, drw.drawable);
-	XFreeGC(drw->display, drw.gc);
+	XFreePixmap(drw->display, drw->drawable);
+	XFreeGC(drw->display, drw->gc);
 	drw_fontset_free(drw->fonts);
 	free(drw);
 }
@@ -178,7 +180,7 @@ xfont_create(dmDrawable *drw, const char *fontname, FcPattern *fontpattern)
 		return NULL;
 	}
 
-	font = ecalloc(1, sizeof(Fnt));
+	font = new Fnt; //ecalloc<Fnt>(1, sizeof(Fnt));
 	font->xfont = xfont;
 	font->pattern = pattern;
 	font->h = xfont->ascent + xfont->descent;
@@ -245,7 +247,7 @@ Clr *drw_scm_create(dmDrawable *drw, const char *clrnames[], size_t clrcount)
 	Clr *ret;
 
 	/* need at least two colors for a scheme */
-	if (!drw || !clrnames || clrcount < 2 || !(ret = ecalloc(clrcount, sizeof(XftColor))))
+	if (!drw || !clrnames || clrcount < 2 || !(ret = new Clr /*ecalloc(clrcount, sizeof(XftColor))*/))
 		return NULL;
 
 	for (i = 0; i < clrcount; i++)
@@ -269,11 +271,11 @@ void drw_rect(dmDrawable *drw, int x, int y, unsigned int w, unsigned int h, int
 {
 	if (!drw || !drw->scheme)
 		return;
-	XSetForeground(drw->display, drw.gc, invert ? drw->scheme[ColBg].pixel : drw->scheme[ColFg].pixel);
+	XSetForeground(drw->display, drw->gc, invert ? drw->scheme[ColBg].pixel : drw->scheme[ColFg].pixel);
 	if (filled)
-		XFillRectangle(drw->display, drw.drawable, drw.gc, x, y, w, h);
+		XFillRectangle(drw->display, drw->drawable, drw->gc, x, y, w, h);
 	else
-		XDrawRectangle(drw->display, drw.drawable, drw.gc, x, y, w - 1, h - 1);
+		XDrawRectangle(drw->display, drw->drawable, drw->gc, x, y, w - 1, h - 1);
 }
 
 int drw_text(dmDrawable *drw, int x, int y, unsigned int w, unsigned int h, unsigned int lpad, const char *text, int invert)
@@ -302,9 +304,9 @@ int drw_text(dmDrawable *drw, int x, int y, unsigned int w, unsigned int h, unsi
 	}
 	else
 	{
-		XSetForeground(drw->display, drw.gc, drw->scheme[invert ? ColFg : ColBg].pixel);
-		XFillRectangle(drw->display, drw.drawable, drw.gc, x, y, w, h);
-		d = XftDrawCreate(drw->display, drw.drawable,
+		XSetForeground(drw->display, drw->gc, drw->scheme[invert ? ColFg : ColBg].pixel);
+		XFillRectangle(drw->display, drw->drawable, drw->gc, x, y, w, h);
+		d = XftDrawCreate(drw->display, drw->drawable,
 						  DefaultVisual(drw->display, drw->screen),
 						  DefaultColormap(drw->display, drw->screen));
 		x += lpad;
@@ -434,7 +436,7 @@ void drw_map(dmDrawable *drw, Window win, int x, int y, unsigned int w, unsigned
 	if (!drw)
 		return;
 
-	XCopyArea(drw->display, drw.drawable, win, drw.gc, x, y, w, h, x, y);
+	XCopyArea(drw->display, drw->drawable, win, drw->gc, x, y, w, h, x, y);
 	XSync(drw->display, False);
 }
 
@@ -464,7 +466,7 @@ Cur *drw_cur_create(dmDrawable *drw, int shape)
 {
 	Cur *cur;
 
-	if (!drw || !(cur = ecalloc(1, sizeof(Cur))))
+	if (!drw || !(cur = new Cur /*ecalloc(1, sizeof(Cur))*/))
 		return NULL;
 
 	cur->cursor = XCreateFontCursor(drw->display, shape);

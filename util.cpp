@@ -6,10 +6,10 @@
 
 #include "util.hpp"
 
-void *
-ecalloc(size_t nmemb, size_t size)
+template<typename T>
+T *ecalloc(int nmemb, unsigned long size)
 {
-	void *p;
+	T *p;
 
 	if (!(p = calloc(nmemb, size)))
 		die("calloc:");

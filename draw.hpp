@@ -26,7 +26,20 @@ typedef struct {
 	Fnt *fonts;
 } dmDrawable;
 
-class dmDrawable;
+class dmDrawable
+{
+public:
+	int width, height, screen;
+	Display *display = nullptr;
+	Window root;
+	Drawable drawable;
+	GC gc;
+	Clr *scheme = nullptr;
+	Fnt *fonts = nullptr;
+	dmDrawable(Display *dpy, int _screen, Window _root, int w, int h);
+	~dmDrawable();
+	void dm_resize(int w, int h);
+};
 
 /* Drawable abstraction */
 dmDrawable *drw_create(Display *dpy, int screen, Window win, unsigned int w, unsigned int h);
