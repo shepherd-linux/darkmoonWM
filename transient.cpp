@@ -6,9 +6,12 @@
 #include <thread>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+#include "config.hpp"
 
 int main()
 {
+	std::copy(init_c1.begin(), init_c1.end(), colors[0]);
+	std::copy(init_c2.begin(), init_c2.end(), colors[1]);
 	Display *display;
 	Window root_w, float_w, transient = 0;
 	XSizeHints hint;
