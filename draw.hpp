@@ -24,7 +24,7 @@ typedef struct {
 	GC gc;
 	Clr *scheme;
 	Fnt *fonts;
-} dmDrawable;
+} Drw;
 
 class dmDrawable
 {

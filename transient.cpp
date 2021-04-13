@@ -16,7 +16,7 @@ int main()
 
 	display = XOpenDisplay(nullptr); //NULL
 	if (!display)
-		exit(1);
+		return 1 ; //exit(1);
 	root_w = DefaultRootWindow(display);
 
 	float_w = XCreateSimpleWindow(display, root_w, 100, 100, 400, 400, 0, 0, 0);
@@ -43,5 +43,5 @@ int main()
 	}
 
 	XCloseDisplay(display);
-	exit(0);
+	return 0; //exit(0);
 }
