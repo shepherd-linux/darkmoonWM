@@ -266,7 +266,7 @@ static int running = 1;
 static Cur *cursor[CurLast];
 static Clr **scheme;
 static Display *dpy;
-static std::shared_ptr<dmDrawable> drw;
+static dmDrawable *drw;
 static Monitor *mons, *selmon;
 static Window root, wmcheckwin;
 
@@ -693,7 +693,7 @@ dirtomon(int dir)
 		for (m = mons; m->next != selmon; m = m->next);
 	return m;
 }
-
+/*
 void
 drawbar(Monitor *m)
 {
@@ -703,10 +703,10 @@ drawbar(Monitor *m)
 	unsigned int i, occ = 0, urg = 0;
 	Client *c;
 
-	/* draw status first so it can be overdrawn by tags later */
-	if (m == selmon) { /* status is only drawn on selected monitor */
+	// draw status first so it can be overdrawn by tags later 
+	if (m == selmon) { //status is only drawn on selected monitor 
 		drw_setscheme(drw, scheme[SchemeNorm]);
-		tw = TEXTW(stext) - lrpad + 2; /* 2px right padding */
+		tw = TEXTW(stext) - lrpad + 2; // 2px right padding 
 		drw_text(drw, m->ww - tw, 0, tw, bh, 0, stext, 0);
 	}
 
@@ -752,7 +752,7 @@ drawbars(void)
 	for (m = mons; m; m = m->next)
 		drawbar(m);
 }
-
+*/
 void
 enternotify(XEvent *e)
 {
@@ -1543,7 +1543,7 @@ setup(void)
 	sw = DisplayWidth(dpy, screen);
 	sh = DisplayHeight(dpy, screen);
 	root = RootWindow(dpy, screen);
-	drw = std::make_shared<dmDrawable>(); // drw_create(dpy, screen, root, sw, sh);
+	drw = dmDrawable(dpy,screen, root, sw, sh); // drw_create(dpy, screen, root, sw, sh);
 	if (!drw_fontset_create(drw, fonts, LENGTH(fonts)))
 		die("no fonts could be loaded.");
 	lrpad = drw->fonts->h;
