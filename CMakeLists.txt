@@ -12,7 +12,9 @@ else()
 endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -fpermissive -Wnarrowing")
 
-include_directories("/usr/include/freetype2", "include")
+include_directories("/usr/include/freetype2" "include")
 
 file(GLOB SOURCES "src/*.cpp")
 add_executable(darkmoon ${SOURCES})
+set_target_properties(darkmoon PROPERTIES DEBUG_POSTFIX "_d")
+set_target_properties(darkmoon PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
